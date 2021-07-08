@@ -23,6 +23,7 @@
 #
 #  Start of project              : 2013-01-21 by Tamir Lousky
 #  Last modified                 : 2015-05-25 by Tamir Lousky
+#  Updated for 2.93              : 2021-07-07 by Vadim Temkin
 #
 #  Acknowledgements
 #  ================
@@ -37,22 +38,22 @@ bl_info = {
     "name"        : "Ivy Growth Animator",
     "author"      : "Tamir Lousky",
     "version"     : (1, 0, 3),
-    "blender"     : (2, 74, 0),
+    "blender"     : (2, 92, 0),
     "category"    : "Object",
-    "location"    : "3D View >> Tools",
+    "location"    : "UI > Ivy Animator",
     "wiki_url"    : "http://bioblog3d.wordpress.com/2013/02/06/iga-is-ready/",
-    "download_url": "https://github.com/Tlousky/ivy_growth_animator",
+    "download_url": "https://github.com/palagraph/ivy_growth_animator",
     "description" : "Animate the growth of Ivy and Trees."
     }
 
 import bpy, bmesh, mathutils, random
 
 class IvyGrowthAnimator( bpy.types.Panel ):
-    bl_idname      = "IvyGrowthAnimatorPanel"
-    bl_label       = "Ivy Growth Animator"
+    bl_idname      = 'panel.my_panel'
+    bl_label       = "Ivy Animator"
     bl_category    = "Ivy Animator"
     bl_space_type  = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
+    bl_region_type = 'UI'
     bl_context     = 'objectmode'
 
     # Draw panel UI elements #
@@ -187,14 +188,16 @@ class BranchesAnimProperties( bpy.types.PropertyGroup ):
         # I'm creating a new vector since the point natively comes with
         # 4 arguments instead of just xyz, and this produces an error
         # when trying to set the cursor there
-        bpy.context.scene.cursor_location = mathutils.Vector( [
+        bpy.context.scene.cursor.location = mathutils.Vector( [
             first_curve_point.x,
             first_curve_point.y,
             first_curve_point.z ] )
 
         # Select object
-        obj.select = True
-        bpy.context.scene.objects.active = obj
+        # obj.select = True
+        obj.select_set(state=True)
+        # bpy.context.scene.objects.active = obj
+        bpy.context.view_layer.objects.active = obj
 
         bpy.ops.object.convert(target='MESH')       # object to mesh
         bpy.ops.object.mode_set(mode='EDIT' )       # Go to edit mode
@@ -222,8 +225,9 @@ class BranchesAnimProperties( bpy.types.PropertyGroup ):
         ivy_objects = []
         for current_obj in bpy.data.objects:                 # browse all objects and filter out ivy branches
             if base_name in current_obj.name:                # if the object name contains the base_name
-                current_obj.data.update(calc_tessface=True)  # calculate face data so that...
-                face_count = len(current_obj.data.tessfaces) # we can obtain the total number of faces
+                #current_obj.data.update(calc_tessface=True)  # calculate face data so that...
+                #face_count = len(current_obj.data.tessfaces) # we can obtain the total number of faces
+                face_count = len(current_obj.data.polygons) # we can obtain the total number of faces
                 ivy_objects.append( {                        # add ivy object to list:
                     "name" : current_obj.name,               #   include name
                     "facecount" : face_count } )             #   and face count
@@ -268,27 +272,27 @@ class BranchesAnimProperties( bpy.types.PropertyGroup ):
 
             count += 1
 
-    frame_start = bpy.props.IntProperty(  # When to start animating
+    frame_start : bpy.props.IntProperty(  # When to start animating
         name="frame_start",               # the branches
         description="Growth animation's start point (frame)",
         default=1
         )
-    faces_per_frame = bpy.props.IntProperty( # Controls the speed of the
+    faces_per_frame : bpy.props.IntProperty( # Controls the speed of the
         name="faces_per_frame",              # animation
         description="Speed of the animation (higher values = faster)",
         default=4
         )
-    delay_branches = bpy.props.IntProperty( # Frames to wait between
+    delay_branches : bpy.props.IntProperty( # Frames to wait between
         name="delay_branches",              # branches
         description="Number of frames to wait between branch builds",
         default=4
         )
-    initial_delay = bpy.props.IntProperty( # Frames to wait between
+    initial_delay : bpy.props.IntProperty( # Frames to wait between
         name="initial_delay",              # before starting with branch no. 2
         description="Number of frames to wait before animating 2nd branch",
         default=15
         )
-    modifier_name = bpy.props.StringProperty(
+    modifier_name : bpy.props.StringProperty(
         name="modifier_name", default="GROW" )
 
 class LeavesAnimProperties( bpy.types.PropertyGroup ):
@@ -432,24 +436,33 @@ class LeavesAnimProperties( bpy.types.PropertyGroup ):
             self.create_shapekey( leaves, index, start, duration)                         # Create a shapekey for this leaf
 
     # Leaf Animation Properties
-    delay_after_branch = bpy.props.IntProperty(  # No. of frames to wait after
+    delay_after_branch : bpy.props.IntProperty(  # No. of frames to wait after
         name="delay_after_branch",               # closest branch finished
         description="Frames to wait before animating leaf after closest branch finished animating",
         default=10
         )
-    max_growth_length = bpy.props.IntProperty(  # Maximum growth animation length
+    max_growth_length : bpy.props.IntProperty(  # Maximum growth animation length
         name="max_growth_length",
         description="Maximum length for the growth animation of a leaf",
         default=25
         )
-    min_growth_length = bpy.props.IntProperty(  # Minimum growth animation length
+    min_growth_length : bpy.props.IntProperty(  # Minimum growth animation length
         name="min_growth_length",
         description="Minimum length for the growth animation of a leaf",
         default=10
         )
+classes = (
+    IvyGrowthAnimator,
+    AnimateBranches,
+    AnimateLeaves,
+    BranchesAnimProperties,
+    LeavesAnimProperties,
+)
 
 def register():
-    bpy.utils.register_module(__name__)
+    from bpy.utils import register_class
+    for cls in classes:
+        register_class(cls)
     # Create poperties for branch and leaf object selection boxes (in the panel)
     bpy.types.Scene.BranchObject = bpy.props.StringProperty()
     bpy.types.Scene.LeavesObject = bpy.props.StringProperty()
@@ -457,4 +470,6 @@ def register():
     bpy.types.Scene.LeavesAnimProperties   = bpy.props.PointerProperty(type=LeavesAnimProperties  )
 
 def unregister():
-    bpy.utils.unregister_module(__name__)
+    from bpy.utils import unregister_class
+    for cls in reversed(classes):
+        unregister_class(cls)
