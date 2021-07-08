@@ -37,11 +37,11 @@
 bl_info = {
     "name"        : "Ivy Growth Animator",
     "author"      : "Tamir Lousky",
-    "version"     : (1, 0, 3),
+    "version"     : (1, 0, 4),
     "blender"     : (2, 92, 0),
     "category"    : "Object",
     "location"    : "UI > Ivy Animator",
-    "wiki_url"    : "http://bioblog3d.wordpress.com/2013/02/06/iga-is-ready/",
+    "wiki_url"    : "https://github.com/palagraph/ivy_growth_animator",
     "download_url": "https://github.com/palagraph/ivy_growth_animator",
     "description" : "Animate the growth of Ivy and Trees."
     }
